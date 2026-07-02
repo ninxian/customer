@@ -20,8 +20,8 @@
     </main><aside class="setup">設定位置：請在本檔案搜尋 <code>SUPABASE_URL</code> 與 <code>SUPABASE_ANON_KEY</code>，填入你的 Supabase 專案資訊。資料庫 SQL 請使用同資料夾的 <code>supabase_setup.sql</code>。</aside>
   </div>
 <script>
-const SUPABASE_URL = "請填入你的 Supabase Project URL";
-const SUPABASE_ANON_KEY = "請填入你的 Supabase anon public key";
+const SUPABASE_URL = "https://fofyyemkohotxhaoyvms.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_pJM_n5Dmyxp1K3kUDA6KUQ_V87Qn7Ts";
 const REFRESH_INTERVAL_MS = 5000;
 const els = {eventName:document.getElementById("eventName"),startAt:document.getElementById("startAt"),endAt:document.getElementById("endAt"),eventStatus:document.getElementById("eventStatus"),eventNotice:document.getElementById("eventNotice"),form:document.getElementById("registrationForm"),customerName:document.getElementById("customerName"),productName:document.getElementById("productName"),quantity:document.getElementById("quantity"),submitButton:document.getElementById("submitButton"),formMessage:document.getElementById("formMessage"),syncText:document.getElementById("syncText"),screenMode:document.getElementById("screenMode"),screenProductCount:document.getElementById("screenProductCount"),screenTotalQty:document.getElementById("screenTotalQty"),registrationCount:document.getElementById("registrationCount"),productKindCount:document.getElementById("productKindCount"),totalQuantity:document.getElementById("totalQuantity"),totalsBody:document.getElementById("totalsBody"),registrationsBody:document.getElementById("registrationsBody")};
 const isConfigured = !SUPABASE_URL.includes("請填入") && !SUPABASE_ANON_KEY.includes("請填入");
