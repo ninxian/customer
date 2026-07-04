@@ -109,6 +109,17 @@ els.registrationForm.addEventListener("submit",async function(event){event.preve
 els.activityForm.addEventListener("submit",async function(event){event.preventDefault();setMsg(els.activityMessage,"");const productName=cleanProduct(els.activityProductName.value);const startAt=toIsoFromDate(els.activityStartAt.value,false);const endAt=toIsoFromDate(els.activityEndAt.value,true);const quotaRaw=els.quotaLimit.value.trim();const quotaLimit=quotaRaw===""?null:Number(quotaRaw);if(!productName)return setMsg(els.activityMessage,"產品名稱不可空白。","error");if((els.activityStartAt.value&&!startAt)||(els.activityEndAt.value&&!endAt))return setMsg(els.activityMessage,"請填寫有效的開始與結束日期。","error");if(startAt&&endAt&&new Date(endAt)<=new Date(startAt))return setMsg(els.activityMessage,"結束日期必須等於或晚於開始日期。","error");if(quotaRaw!==""&&(!Number.isInteger(quotaLimit)||quotaLimit<=0))return setMsg(els.activityMessage,"名額限制必須是大於 0 的整數，或留空表示無上限。","error");isActivitySubmitting=true;updateActivityButton();try{const result=await supabaseClient.rpc("create_product_activity",{p_product_name:productName,p_start_at:startAt,p_end_at:endAt,p_quota_limit:quotaLimit});if(result.error)throw result.error;setMsg(els.activityMessage,(editingActivity?"已儲存活動：":"已新增活動：")+productName,"ok");editingActivity=null;els.activityProductName.value="";els.activityStartAt.value="";els.activityEndAt.value="";els.quotaLimit.value="";await loadData();}catch(error){console.error(error);setMsg(els.activityMessage,error.message||"新增活動失敗，請稍後再試。","error");}finally{isActivitySubmitting=false;updateActivityButton();}});
 
 function urlBase64ToUint8Array(base64String){const padding='='.repeat((4-base64String.length%4)%4);const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');const rawData=atob(base64);const outputArray=new Uint8Array(rawData.length);for(let i=0;i<rawData.length;++i)outputArray[i]=rawData.charCodeAt(i);return outputArray;}
+
+async function checkExistingPushSubscription(){
+  if(!('serviceWorker' in navigator)||!('PushManager' in window)||!els.notificationButton)return;
+  try{
+    const registration=await navigator.serviceWorker.getRegistration();
+    if(!registration)return;
+    const subscription=await registration.pushManager.getSubscription();
+    if(subscription)els.notificationButton.style.display='none';
+  }catch(error){console.warn('push subscription check failed',error);}
+}
+
 async function subscribeForPushNotifications(){
   if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){setMsg(els.registrationMessage,'此瀏覽器不支援推播通知。','error');return;}
   if(!isConfigured){setMsg(els.registrationMessage,'Supabase 尚未設定，無法開啟通知。','error');return;}
@@ -116,17 +127,20 @@ async function subscribeForPushNotifications(){
   try{
     const permission=await Notification.requestPermission();
     if(permission!=='granted'){setMsg(els.registrationMessage,'尚未允許通知。','error');return;}
-    const registration=await navigator.serviceWorker.register('service-worker.js');
-    const subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
+    await navigator.serviceWorker.register('service-worker.js');
+    const registration=await navigator.serviceWorker.ready;
+    const existingSubscription=await registration.pushManager.getSubscription();
+    const subscription=existingSubscription||await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
     const result=await supabaseClient.rpc('save_push_subscription',{p_subscription:subscription.toJSON()});
     if(result.error)throw result.error;
-    els.notificationButton.textContent='通知已開啟';
+    els.notificationButton.style.display='none';
     setMsg(els.registrationMessage,'已開啟手機推播通知。','ok');
-  }catch(error){console.error(error);setMsg(els.registrationMessage,error.message||'開啟通知失敗。','error');}
+  }catch(error){console.error(error);const message=String(error && error.message ? error.message : '開啟通知失敗。');setMsg(els.registrationMessage,message.includes('active service worker')?'通知服務正在啟動，請重新整理後再按一次開啟通知。':message,'error');}
   finally{els.notificationButton.disabled=false;}
 }
 els.notificationButton.addEventListener('click',subscribeForPushNotifications);
 
+checkExistingPushSubscription();
 updateActivityButton();updateProductStatus();loadData();window.setInterval(loadData,REFRESH_INTERVAL_MS);
 </script>
 </body>
